@@ -1,0 +1,17 @@
+# Ignore sensitive config files
+config/*.ini
+
+# Ignore data/log files
+data/*
+logs/*
+
+# Ignore environment files
+.env
+*.log
+*.pyc
+__pycache__/
+
+# Ignore conda environment directories
+env/
+.conda/
+

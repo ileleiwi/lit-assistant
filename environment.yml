@@ -1,0 +1,12 @@
+name: lit-assistant
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - requests
+  - beautifulsoup4
+  - feedparser
+  - openai
+  - arxiv
+  - python-dotenv
+
