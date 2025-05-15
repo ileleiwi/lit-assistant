@@ -21,23 +21,29 @@ def send_email(subject, body):
     server.sendmail(msg['From'], msg['To'], msg.as_string())
     server.quit()
 
-# Load summaries
-with open('../data/new_papers.json') as f:
-    summaries = json.load(f)
+# Load the most recent summaries from previous_papers.json
+try:
+    with open('../data/previous_papers.json') as f:
+        papers = json.load(f)
+except FileNotFoundError:
+    print("❌ No previous_papers.json file found.")
+    exit(1)
 
-if not summaries:
-    print("No new papers to email.")
+# Filter for those just summarized (assumes they have 'summary' but aren't in email history)
+new_summaries = [p for p in papers if 'summary' in p]
+
+if not new_summaries:
+    print("🟡 No new summaries found to email.")
     exit(0)
 
-
-# Build email body safely
+# Build the email body
 body = "\n\n".join([
     f"Title: {p.get('title', 'N/A')}\n"
     f"Journal: {p.get('journal', 'Unknown')}\n"
     f"Link: {p.get('id', 'N/A')}\n"
     f"Summary: {p.get('summary', 'N/A')}"
-    for p in summaries
+    for p in new_summaries
 ])
 
-# Send the email
-send_email(subject="Daily Microbiome Literature Update", body=body)
+send_email(subject="New Microbiome Literature Summary", body=body)
+print("✅ Email sent successfully.")
