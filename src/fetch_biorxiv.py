@@ -54,4 +54,7 @@ if __name__ == "__main__":
     with open('../data/biorxiv_papers.json', 'w') as f:
         json.dump(papers, f, indent=2)
 
-    print(f"🧠 Found {len(papers)} bioRxiv papers matching keywords.")
+    print(f"\n🧠 Found {len(papers)} bioRxiv papers matching keywords.")
+    for p in papers:
+        print(f"- {p['title']}\n  Link: {p['id']}\n")
+
