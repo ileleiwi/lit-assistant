@@ -1,10 +1,6 @@
-import feedparser
+import requests
 import json
-import re
-import unicodedata
-from bs4 import BeautifulSoup
 
-# Broad keyword list
 KEYWORDS = [
     "microbiome", "metagenomics", "qsip", "sip", "16s",
     "multi omics", "multi-omics", "transcriptomics", "metabolomics",
@@ -12,49 +8,35 @@ KEYWORDS = [
     "artificial intelligence", "deep learning", "electron microscopy"
 ]
 
-FEED_URL = 'https://www.biorxiv.org/rss/latest.xml'
+def fetch_biorxiv_from_epmc():
+    query = ' OR '.join([f'"{kw}"' for kw in KEYWORDS])
+    full_query = f'({query}) AND SRC:"biorxiv"'
 
-def clean_text(text):
-    text = BeautifulSoup(text, "html.parser").get_text()
-    text = unicodedata.normalize("NFKD", text)
-    text = text.replace("-", " ")
-    text = text.lower()
-    return re.sub(r'\s+', ' ', text).strip()
+    url = 'https://www.ebi.ac.uk/europepmc/webservices/rest/search'
+    params = {
+        'query': full_query,
+        'format': 'json',
+        'pageSize': 25
+    }
 
-def fetch_biorxiv():
-    feed = feedparser.parse(FEED_URL)
-    new_papers = []
+    response = requests.get(url, params=params)
+    data = response.json()
 
-    print(f"🔍 Checking {len(feed.entries)} bioRxiv entries...\n")
+    papers = []
+    for hit in data.get("resultList", {}).get("result", []):
+        papers.append({
+            "id": hit.get("id", ""),
+            "title": hit.get("title", ""),
+            "abstract": hit.get("abstractText", ""),
+            "journal": "bioRxiv",
+            "source": "EuropePMC"
+        })
 
-    for entry in feed.entries:
-        title = entry.title
-        summary = entry.summary
-        link = entry.link
-
-        full_raw = title + " " + summary
-        cleaned = clean_text(full_raw)
-
-        matched_keywords = [kw for kw in KEYWORDS if kw.lower() in cleaned]
-
-        # DEBUG: Show all titles and their matches
-        print(f"Title: {title}")
-        print(f"Matched Keywords: {matched_keywords}")
-        print("----")
-
-        if matched_keywords:
-            new_papers.append({
-                "id": link,
-                "title": title,
-                "abstract": summary,
-                "journal": "bioRxiv"
-            })
-
-    return new_papers
+    return papers
 
 if __name__ == "__main__":
-    papers = fetch_biorxiv()
+    papers = fetch_biorxiv_from_epmc()
     with open('../data/biorxiv_papers.json', 'w') as f:
         json.dump(papers, f, indent=2)
 
-    print(f"\n✅ Found {len(papers)} bioRxiv papers matching keywords.")
+    print(f"✅ Found {len(papers)} bioRxiv papers matching keywords from Europe PMC.")
