@@ -13,30 +13,36 @@ def fetch_biorxiv():
     end = date.today()
     start = end - timedelta(days=3)
     url = f"https://api.biorxiv.org/details/biorxiv/{start}/{end}/0"
-
     response = requests.get(url)
     response.raise_for_status()
     results = response.json()
 
-    new_papers = []
+    try:
+        with open('../data/previous_papers.json') as f:
+            previous = json.load(f)
+            seen_ids = {p.get("id", "") for p in previous if "id" in p}
+    except FileNotFoundError:
+        seen_ids = set()
 
+    papers = []
     for entry in results.get("collection", []):
-        title = entry.get("title", "").lower()
-        abstract = entry.get("abstract", "").lower()
-        combined_text = f"{title} {abstract}"
-        if any(keyword in combined_text for keyword in KEYWORDS):
-            new_papers.append({
-                "id": f"https://www.biorxiv.org/content/{entry['doi']}",
+        combined = f"{entry.get('title', '').lower()} {entry.get('abstract', '').lower()}"
+        if any(k in combined for k in KEYWORDS):
+            pid = f"https://www.biorxiv.org/content/{entry['doi']}"
+            if pid in seen_ids:
+                continue
+            papers.append({
+                "id": pid,
                 "title": entry.get("title", ""),
                 "abstract": entry.get("abstract", ""),
                 "journal": "bioRxiv",
-                "date": entry.get("date", "")
+                "date": entry.get("date", ""),
+                "source": "bioRxiv"
             })
 
-    return new_papers
+    return papers
 
 if __name__ == "__main__":
     papers = fetch_biorxiv()
-    with open("biorxiv_papers.json", "w") as f:
+    with open('../data/biorxiv_papers.json', 'w') as f:
         json.dump(papers, f, indent=2)
-    print(f"✅ Saved {len(papers)} matching bioRxiv papers to biorxiv_papers.json")
