@@ -35,6 +35,17 @@ def fetch_pubmed(query, max_results=10):
                 print("Journal:", journal)
                 print("Abstract:", abstract[:60], "...")
 
+                # Load previously emailed PMIDs
+                try:
+                    with open('../data/previous_papers.json') as f:
+                        previous = json.load(f)
+                        seen_pmids = {p.get("id", "").split("/")[-2] for p in previous if "id" in p}
+                except FileNotFoundError:
+                    seen_pmids = set()
+
+                pmid = article.findtext(".//PMID")
+                if pmid in seen_pmids:
+                    continue
 
                 papers.append({
                     "id": f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/" if pmid else "N/A",
