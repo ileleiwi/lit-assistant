@@ -1,5 +1,6 @@
 from Bio import Entrez
 from configparser import ConfigParser
+import xml.etree.ElementTree as ET
 import json
 
 config = ConfigParser()
@@ -18,30 +19,25 @@ def fetch_pubmed(query, max_results=10):
     papers = []
     if ids:
         fetch_handle = Entrez.efetch(db="pubmed", id=",".join(ids), rettype="xml")
-        articles = Entrez.read(fetch_handle)
+        xml_data = fetch_handle.read()
+        root = ET.fromstring(xml_data)
 
-        for article in articles["PubmedArticle"]:
+        for article in root.findall(".//PubmedArticle"):
             try:
-                article_data = article["MedlineCitation"]["Article"]
-                title = article_data.get("ArticleTitle", "No title available")
-
-                abstract_block = article_data.get("Abstract", {})
-                abstract = abstract_block.get("AbstractText", ["No abstract available"])[0]
-
-                pmid = article["MedlineCitation"].get("PMID", "N/A")
-                link = f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/" if pmid != "N/A" else "N/A"
-
-                journal = article_data.get("Journal", {}).get("Title", "Unknown")
+                pmid = article.findtext(".//PMID")
+                title = article.findtext(".//ArticleTitle", default="No title available")
+                abstract = article.findtext(".//AbstractText", default="No abstract available")
+                journal = article.findtext(".//Journal/Title", default="Unknown")
 
                 papers.append({
-                    "id": link,
-                    "title": title,
-                    "abstract": abstract,
-                    "journal": journal
+                    "id": f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/" if pmid else "N/A",
+                    "title": title.strip(),
+                    "abstract": abstract.strip(),
+                    "journal": journal.strip()
                 })
 
             except Exception as e:
-                print(f"Skipping article due to error: {e}")
+                print(f"Error processing article: {e}")
                 continue
 
         fetch_handle.close()
