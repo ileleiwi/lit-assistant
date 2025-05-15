@@ -26,34 +26,45 @@ def summarize_paper(title, abstract):
     return f"(MOCK SUMMARY)\nTitle: {title[:60]}...\nAbstract: {abstract[:100]}..."
 
 if __name__ == "__main__":
-    # Load any previously summarized papers (for persistent tracking)
+    # Load previously summarized papers
     try:
         with open('../data/previous_papers.json') as f:
             previous_papers = json.load(f)
     except FileNotFoundError:
         previous_papers = []
 
-    # Extract known PMIDs to prevent duplicates
     seen_pmids = {p.get("id", "").split("/")[-2] for p in previous_papers if "id" in p}
 
-    # Load new batch of papers from fetch_pubmed
-    with open('../data/new_papers.json') as f:
-        new_papers = json.load(f)
+    # Load new PubMed papers
+    try:
+        with open('../data/new_papers.json') as f:
+            pubmed_papers = json.load(f)
+    except FileNotFoundError:
+        pubmed_papers = []
 
-    # Filter out already-summarized PMIDs
-    unseen_papers = [
-        p for p in new_papers
+    # Load bioRxiv papers (optional)
+    try:
+        with open('../data/biorxiv_papers.json') as f:
+            biorxiv_papers = json.load(f)
+    except FileNotFoundError:
+        biorxiv_papers = []
+
+    # Combine all sources
+    combined = pubmed_papers + biorxiv_papers
+
+    # Filter out already summarized papers by ID
+    new_to_summarize = [
+        p for p in combined
         if p.get("id", "").split("/")[-2] not in seen_pmids
     ]
 
-    # Summarize only new ones
-    for paper in unseen_papers:
+    # Summarize new papers
+    for paper in new_to_summarize:
         summary = summarize_paper(paper.get('title', ''), paper.get('abstract', ''))
         paper['summary'] = summary
 
-    # Append the newly summarized papers to the previous list
-    updated_papers = previous_papers + unseen_papers
+    # Append new papers to previous and save
+    updated_papers = previous_papers + new_to_summarize
 
-    # Save the combined list back to previous_papers.json
     with open('../data/previous_papers.json', 'w') as f:
         json.dump(updated_papers, f, indent=2)
