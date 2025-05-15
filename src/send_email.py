@@ -22,8 +22,13 @@ def send_email(subject, body):
     server.quit()
 
 # Load summaries
-with open('../data/previous_papers.json') as f:
+with open('../data/new_papers.json') as f:
     summaries = json.load(f)
+
+if not summaries:
+    print("No new papers to email.")
+    exit(0)
+
 
 # Build email body safely
 body = "\n\n".join([
