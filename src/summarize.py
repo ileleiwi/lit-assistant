@@ -42,26 +42,26 @@ if __name__ == "__main__":
     except FileNotFoundError:
         pubmed_papers = []
 
-    # Load bioRxiv papers (optional)
+    # Load new bioRxiv papers
     try:
         with open('../data/biorxiv_papers.json') as f:
             biorxiv_papers = json.load(f)
     except FileNotFoundError:
         biorxiv_papers = []
 
-    # Combine all sources
-    combined = pubmed_papers + biorxiv_papers
+    # Combine and deduplicate
+    all_new = pubmed_papers + biorxiv_papers
+    new_to_summarize = [p for p in all_new if p.get("id", "") not in seen_ids]
 
-    # Filter out already summarized papers by ID
-    new_to_summarize = [p for p in combined if p.get("id", "") not in seen_ids]
-
-    # Summarize new papers
+    # Summarize new ones
     for paper in new_to_summarize:
         summary = summarize_paper(paper.get('title', ''), paper.get('abstract', ''))
         paper['summary'] = summary
 
-    # Append new papers to previous and save
+    # Append to previous and overwrite
     updated_papers = previous_papers + new_to_summarize
 
     with open('../data/previous_papers.json', 'w') as f:
         json.dump(updated_papers, f, indent=2)
+
+    print(f"✅ Summarized {len(new_to_summarize)} new papers.")
