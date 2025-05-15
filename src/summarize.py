@@ -33,7 +33,7 @@ if __name__ == "__main__":
     except FileNotFoundError:
         previous_papers = []
 
-    seen_pmids = {p.get("id", "").split("/")[-2] for p in previous_papers if "id" in p}
+    seen_ids = {p.get("id", "") for p in previous_papers if "id" in p}
 
     # Load new PubMed papers
     try:
@@ -53,10 +53,7 @@ if __name__ == "__main__":
     combined = pubmed_papers + biorxiv_papers
 
     # Filter out already summarized papers by ID
-    new_to_summarize = [
-        p for p in combined
-        if p.get("id", "").split("/")[-2] not in seen_pmids
-    ]
+    new_to_summarize = [p for p in combined if p.get("id", "") not in seen_ids]
 
     # Summarize new papers
     for paper in new_to_summarize:
