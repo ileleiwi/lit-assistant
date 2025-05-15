@@ -17,6 +17,15 @@ def fetch_pubmed(query, max_results=10):
     ids = record["IdList"]
 
     papers = []
+
+    # ✅ Load previously emailed PMIDs once
+    try:
+        with open('../data/previous_papers.json') as f:
+            previous = json.load(f)
+            seen_pmids = {p.get("id", "").split("/")[-2] for p in previous if "id" in p}
+    except FileNotFoundError:
+        seen_pmids = set()
+
     if ids:
         fetch_handle = Entrez.efetch(db="pubmed", id=",".join(ids), rettype="xml")
         xml_data = fetch_handle.read()
@@ -25,6 +34,9 @@ def fetch_pubmed(query, max_results=10):
         for article in root.findall(".//PubmedArticle"):
             try:
                 pmid = article.findtext(".//PMID")
+                if not pmid or pmid in seen_pmids:
+                    continue  # ✅ Skip duplicates or malformed
+
                 title = article.findtext(".//ArticleTitle", default="No title available")
                 abstract = article.findtext(".//AbstractText", default="No abstract available")
                 journal = article.findtext(".//Journal/Title", default="Unknown")
@@ -35,20 +47,8 @@ def fetch_pubmed(query, max_results=10):
                 print("Journal:", journal)
                 print("Abstract:", abstract[:60], "...")
 
-                # Load previously emailed PMIDs
-                try:
-                    with open('../data/previous_papers.json') as f:
-                        previous = json.load(f)
-                        seen_pmids = {p.get("id", "").split("/")[-2] for p in previous if "id" in p}
-                except FileNotFoundError:
-                    seen_pmids = set()
-
-                pmid = article.findtext(".//PMID")
-                if pmid in seen_pmids:
-                    continue
-
                 papers.append({
-                    "id": f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/" if pmid else "N/A",
+                    "id": f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/",
                     "title": title.strip(),
                     "abstract": abstract.strip(),
                     "journal": journal.strip()
@@ -64,5 +64,7 @@ def fetch_pubmed(query, max_results=10):
 
 if __name__ == "__main__":
     papers = fetch_pubmed(query, max_results)
-    with open('../data/previous_papers.json', 'w') as f:
+
+    # ✅ Save new papers to separate file for summarization step
+    with open('../data/new_papers.json', 'w') as f:
         json.dump(papers, f, indent=2)
