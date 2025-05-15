@@ -8,6 +8,9 @@ config.read('../config/config.ini')
 openai.api_key = config['openai']['api_key']
 model = config['openai']['model']
 
+max_results_total = int(config['search'].get("max_results_total", 5))
+
+
 # def summarize_paper(title, abstract):
 #     prompt = (
 #         "You are summarizing microbiome research papers succinctly. "
@@ -46,6 +49,8 @@ if __name__ == "__main__":
     now = datetime.now().isoformat()
 
     for p in all_new:
+        if len(new_to_summarize) >= max_results_total:
+            break
         pid = p.get("id", "")
         if pid not in seen_ids:
             p['summary'] = summarize_paper(p.get("title", ""), p.get("abstract", ""))
@@ -57,10 +62,8 @@ if __name__ == "__main__":
     with open('../data/previous_papers.json', 'w') as f:
         json.dump(updated, f, indent=2)
 
-        # Write even if it's an empty list
-    just_ids = [p["id"] for p in new_to_summarize if "id" in p]
+    # Always write this file (even if empty)
     with open('../data/just_summarized_ids.json', 'w') as f:
-        json.dump(just_ids, f)
+        json.dump([p["id"] for p in new_to_summarize], f)
 
-    print(f"\n✅ Summarized {len(new_to_summarize)} new papers.")
-
+    print(f"\n✅ Summarized {len(new_to_summarize)} new papers (max allowed: {max_results_total}).")
