@@ -29,6 +29,13 @@ def fetch_pubmed(query, max_results=10):
                 abstract = article.findtext(".//AbstractText", default="No abstract available")
                 journal = article.findtext(".//Journal/Title", default="Unknown")
 
+                print("==== Paper ====")
+                print("PMID:", pmid)
+                print("Title:", title)
+                print("Journal:", journal)
+                print("Abstract:", abstract[:60], "...")
+
+
                 papers.append({
                     "id": f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/" if pmid else "N/A",
                     "title": title.strip(),
