@@ -1,3 +1,4 @@
+import json
 import openai
 from configparser import ConfigParser
 
@@ -25,19 +26,12 @@ def summarize_paper(title, abstract):
     return f"(MOCK SUMMARY)\nTitle: {title[:60]}...\nAbstract: {abstract[:100]}..."
 
 if __name__ == "__main__":
-    import json
     with open('../data/previous_papers.json') as f:
         papers = json.load(f)
 
-    summaries = []
     for paper in papers:
-        summary = summarize_paper(paper['title'], paper['abstract'])
-        summaries.append({
-            'title': paper['title'],
-            'link': paper['id'],
-            'summary': summary
-        })
+        summary = summarize_paper(paper.get('title', ''), paper.get('abstract', ''))
+        paper['summary'] = summary  # ← add summary but preserve all other keys
 
     with open('../data/previous_papers.json', 'w') as f:
-        json.dump(summaries, f, indent=2)
-
+        json.dump(papers, f, indent=2)
