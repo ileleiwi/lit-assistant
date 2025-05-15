@@ -1,6 +1,7 @@
 import json
 import openai
 from configparser import ConfigParser
+from datetime import datetime
 
 config = ConfigParser()
 config.read('../config/config.ini')
@@ -13,63 +14,53 @@ model = config['openai']['model']
 #         "Highlight the novelty, methods, and potential implications.\n\n"
 #         f"Title: {title}\nAbstract: {abstract}\n\nSummary:"
 #     )
-#     response = openai.ChatCompletion.create(
-#         model=model,
-#         messages=[{"role": "user", "content": prompt}],
-#         temperature=0.2,
-#         max_tokens=200,
-#     )
+#     response = openai.ChatCompletion.create(...)
 #     return response.choices[0].message.content.strip()
 
 def summarize_paper(title, abstract):
     return f"(MOCK SUMMARY)\nTitle: {title[:60]}...\nAbstract: {abstract[:100]}..."
 
 if __name__ == "__main__":
-    # Load previously summarized papers
     try:
         with open('../data/previous_papers.json') as f:
-            previous_papers = json.load(f)
+            previous = json.load(f)
     except FileNotFoundError:
-        previous_papers = []
+        previous = []
 
-    seen_ids = {p.get("id", "") for p in previous_papers if "id" in p}
+    seen_ids = {p.get("id", "") for p in previous if "id" in p}
 
-    # Load new PubMed papers
     try:
         with open('../data/new_papers.json') as f:
-            pubmed_papers = json.load(f)
+            pubmed = json.load(f)
     except FileNotFoundError:
-        pubmed_papers = []
+        pubmed = []
 
-    # Load new bioRxiv papers
     try:
         with open('../data/biorxiv_papers.json') as f:
-            biorxiv_papers = json.load(f)
+            biorxiv = json.load(f)
     except FileNotFoundError:
-        biorxiv_papers = []
+        biorxiv = []
 
-    # Combine and deduplicate
-    all_new = pubmed_papers + biorxiv_papers
+    all_new = pubmed + biorxiv
     new_to_summarize = []
+    now = datetime.now().isoformat()
 
-    print(f"\n🔍 Checking {len(all_new)} total new papers for deduplication...")
     for p in all_new:
         pid = p.get("id", "")
-        if pid in seen_ids:
-            print(f"🔁 Skipping already summarized: {p.get('journal', 'Unknown')} | {p.get('title')[:60]}")
-        else:
-            print(f"🆕 Will summarize: {p.get('journal', 'Unknown')} | {p.get('title')[:60]}")
+        if pid not in seen_ids:
+            p['summary'] = summarize_paper(p.get("title", ""), p.get("abstract", ""))
+            p['summarized_on'] = now
             new_to_summarize.append(p)
 
-    # Summarize new ones
-    for paper in new_to_summarize:
-        summary = summarize_paper(paper.get('title', ''), paper.get('abstract', ''))
-        paper['summary'] = summary
-
-    # Append to previous and overwrite
-    updated_papers = previous_papers + new_to_summarize
+    updated = previous + new_to_summarize
 
     with open('../data/previous_papers.json', 'w') as f:
-        json.dump(updated_papers, f, indent=2)
+        json.dump(updated, f, indent=2)
+
+        # Write even if it's an empty list
+    just_ids = [p["id"] for p in new_to_summarize if "id" in p]
+    with open('../data/just_summarized_ids.json', 'w') as f:
+        json.dump(just_ids, f)
 
     print(f"\n✅ Summarized {len(new_to_summarize)} new papers.")
+
