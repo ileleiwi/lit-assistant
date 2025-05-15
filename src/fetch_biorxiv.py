@@ -2,7 +2,8 @@ import feedparser
 import json
 
 # Define keywords you care about
-KEYWORDS = ['microbiome', 'metagenomics', 'qsip', 'multi-omics', 'machine learning', 'soil']
+KEYWORDS = ['microbiome', 'metagenomics', 'qsip', 'multi-omics', 
+            'machine learning', 'machine-learning', 'AI', 'artificial intelligence', 'soil']
 
 # RSS feed for bioRxiv latest preprints
 FEED_URL = 'https://www.biorxiv.org/rss/latest.xml'
