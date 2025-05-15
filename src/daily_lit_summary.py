@@ -10,31 +10,32 @@ def run_script(name):
     result = subprocess.run(['python', script], capture_output=True, text=True)
     if result.returncode != 0:
         logging.error(f"{name} failed: {result.stderr}")
+        print(f"❌ {name} failed. See logs.")
     else:
         logging.info(f"{name} completed successfully.")
+        print(f"✅ {name} ran successfully.")
+
+def count_papers(path):
+    try:
+        with open(path) as f:
+            papers = json.load(f)
+        return len(papers)
+    except:
+        return 0
 
 if __name__ == "__main__":
-    # Step 1: Fetch PubMed and bioRxiv papers
+    print("🚀 Starting literature assistant pipeline...\n")
+
     run_script('fetch_pubmed.py')
     run_script('fetch_biorxiv.py')
-
-    # Step 2: Summarize papers (merges and updates previous_papers.json)
     run_script('summarize.py')
 
-    # Step 3: Only send email if there are new papers
-    try:
-        with open('../data/new_papers.json') as f:
-            new_pubmed = json.load(f)
-    except FileNotFoundError:
-        new_pubmed = []
+    # Count how many new papers exist before emailing
+    num_pubmed = count_papers('../data/new_papers.json')
+    num_biorxiv = count_papers('../data/biorxiv_papers.json')
+    total_new = num_pubmed + num_biorxiv
 
-    try:
-        with open('../data/biorxiv_papers.json') as f:
-            new_biorxiv = json.load(f)
-    except FileNotFoundError:
-        new_biorxiv = []
-
-    total_new = len(new_pubmed) + len(new_biorxiv)
+    print(f"\n📊 Found {num_pubmed} new PubMed papers and {num_biorxiv} new bioRxiv papers.")
 
     if total_new > 0:
         run_script('send_email.py')
