@@ -24,11 +24,14 @@ def fetch_pubmed(query, max_results=10):
             title = article_data["ArticleTitle"]
             abstract = article_data.get("Abstract", {}).get("AbstractText", [""])[0]
             pmid = article["MedlineCitation"]["PMID"]
+            journal = article_data["Journal"]["Title"]
             papers.append({
                 "id": f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/",
                 "title": title,
-                "abstract": abstract
-            })
+                "abstract": abstract,
+                "journal": journal
+})
+
         fetch_handle.close()
 
     return papers

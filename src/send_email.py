@@ -26,9 +26,10 @@ if __name__ == "__main__":
         summaries = json.load(f)
 
     body = "\n\n".join([
-        f"Title: {p['title']}\nLink: {p['link']}\nSummary: {p['summary']}"
-        for p in summaries
-    ])
+    f"Title: {p['title']}\nJournal: {p['journal']}\nLink: {p['id']}\nSummary: {p['summary']}"
+    for p in summaries
+])
+
 
     send_email(subject="Daily Microbiome Literature Update", body=body)
 
