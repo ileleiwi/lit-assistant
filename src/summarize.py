@@ -13,7 +13,6 @@ model = config['openai']['model']
 #         "Highlight the novelty, methods, and potential implications.\n\n"
 #         f"Title: {title}\nAbstract: {abstract}\n\nSummary:"
 #     )
-# 
 #     response = openai.ChatCompletion.create(
 #         model=model,
 #         messages=[{"role": "user", "content": prompt}],
@@ -51,7 +50,16 @@ if __name__ == "__main__":
 
     # Combine and deduplicate
     all_new = pubmed_papers + biorxiv_papers
-    new_to_summarize = [p for p in all_new if p.get("id", "") not in seen_ids]
+    new_to_summarize = []
+
+    print(f"\n🔍 Checking {len(all_new)} total new papers for deduplication...")
+    for p in all_new:
+        pid = p.get("id", "")
+        if pid in seen_ids:
+            print(f"🔁 Skipping already summarized: {p.get('journal', 'Unknown')} | {p.get('title')[:60]}")
+        else:
+            print(f"🆕 Will summarize: {p.get('journal', 'Unknown')} | {p.get('title')[:60]}")
+            new_to_summarize.append(p)
 
     # Summarize new ones
     for paper in new_to_summarize:
@@ -64,4 +72,4 @@ if __name__ == "__main__":
     with open('../data/previous_papers.json', 'w') as f:
         json.dump(updated_papers, f, indent=2)
 
-    print(f"✅ Summarized {len(new_to_summarize)} new papers.")
+    print(f"\n✅ Summarized {len(new_to_summarize)} new papers.")
