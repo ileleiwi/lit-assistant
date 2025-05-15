@@ -15,11 +15,12 @@ def run_script(name):
         logging.info(f"{name} completed successfully.")
         print(f"✅ {name} ran successfully.")
 
-def count_papers(path):
+def count_new_summaries():
     try:
-        with open(path) as f:
-            papers = json.load(f)
-        return len(papers)
+        with open('../data/previous_papers.json') as f:
+            all_papers = json.load(f)
+        new_papers = [p for p in all_papers if 'summary' in p]
+        return len(new_papers)
     except:
         return 0
 
@@ -30,14 +31,11 @@ if __name__ == "__main__":
     run_script('fetch_biorxiv.py')
     run_script('summarize.py')
 
-    # Count how many new papers exist before emailing
-    num_pubmed = count_papers('../data/new_papers.json')
-    num_biorxiv = count_papers('../data/biorxiv_papers.json')
-    total_new = num_pubmed + num_biorxiv
+    new_summaries = count_new_summaries()
 
-    print(f"\n📊 Found {num_pubmed} new PubMed papers and {num_biorxiv} new bioRxiv papers.")
+    print(f"\n📬 Papers summarized in this run: {new_summaries}")
 
-    if total_new > 0:
+    if new_summaries > 0:
         run_script('send_email.py')
     else:
         print("🟡 No new papers to email. Skipping send_email.py.")
