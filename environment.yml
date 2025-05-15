@@ -9,4 +9,5 @@ dependencies:
   - openai
   - arxiv
   - python-dotenv
+  - biopython
 

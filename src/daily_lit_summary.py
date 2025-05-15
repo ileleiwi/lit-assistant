@@ -13,7 +13,7 @@ def run_script(script_name):
         logging.info(f"{script_name} completed successfully.")
 
 if __name__ == "__main__":
-    run_script('fetch_papers.py')
+    run_script('fetch_pubmed.py')
     run_script('summarize.py')
     run_script('send_email.py')
 
