@@ -1,6 +1,6 @@
 from Bio import Entrez
 from configparser import ConfigParser
-import xml.etree.ElementTree as ET
+import json
 
 config = ConfigParser()
 config.read('../config/config.ini')
@@ -19,18 +19,30 @@ def fetch_pubmed(query, max_results=10):
     if ids:
         fetch_handle = Entrez.efetch(db="pubmed", id=",".join(ids), rettype="xml")
         articles = Entrez.read(fetch_handle)
+
         for article in articles["PubmedArticle"]:
-            article_data = article["MedlineCitation"]["Article"]
-            title = article_data["ArticleTitle"]
-            abstract = article_data.get("Abstract", {}).get("AbstractText", [""])[0]
-            pmid = article["MedlineCitation"]["PMID"]
-            journal = article_data["Journal"]["Title"]
-            papers.append({
-                "id": f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/",
-                "title": title,
-                "abstract": abstract,
-                "journal": journal
-})
+            try:
+                article_data = article["MedlineCitation"]["Article"]
+                title = article_data.get("ArticleTitle", "No title available")
+
+                abstract_block = article_data.get("Abstract", {})
+                abstract = abstract_block.get("AbstractText", ["No abstract available"])[0]
+
+                pmid = article["MedlineCitation"].get("PMID", "N/A")
+                link = f"https://pubmed.ncbi.nlm.nih.gov/{pmid}/" if pmid != "N/A" else "N/A"
+
+                journal = article_data.get("Journal", {}).get("Title", "Unknown")
+
+                papers.append({
+                    "id": link,
+                    "title": title,
+                    "abstract": abstract,
+                    "journal": journal
+                })
+
+            except Exception as e:
+                print(f"Skipping article due to error: {e}")
+                continue
 
         fetch_handle.close()
 
@@ -38,6 +50,5 @@ def fetch_pubmed(query, max_results=10):
 
 if __name__ == "__main__":
     papers = fetch_pubmed(query, max_results)
-    import json
     with open('../data/previous_papers.json', 'w') as f:
         json.dump(papers, f, indent=2)
